@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>랜덤 국내 여행지 추천 🐣</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: linear-gradient(135deg, #ffe4f0 0%, #ffe9c7 45%, #d9f2ff 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: #fffdfa;
+    border-radius: 32px;
+    box-shadow: 0 14px 0 #ffd6e8, 0 20px 40px rgba(255, 150, 190, 0.25);
+    border: 3px solid #ffffff;
+    padding: 36px 32px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+  .emoji-title {
+    font-size: 44px;
+    display: inline-block;
+    animation: wiggle 2.4s ease-in-out infinite;
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-6deg); }
+    50% { transform: rotate(6deg); }
+  }
+  h1 {
+    font-size: 22px;
+    color: #ff6f9c;
+    margin: 8px 0 4px;
+    font-weight: 800;
+  }
+  p.sub {
+    color: #9a8a99;
+    font-size: 13px;
+    margin-bottom: 22px;
+  }
+  .selects { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 999px;
+    border: 2px solid #ffd7e8;
+    font-size: 14px;
+    background: #fff6fa;
+    color: #7a5c6e;
+    font-weight: 600;
+    appearance: none;
+    text-align: center;
+  }
+  select:focus { outline: none; border-color: #ff9fc0; }
+
+  button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 800;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ff9fc0, #ffb6d9);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #ff7fa8;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  button:hover { filter: brightness(1.03); }
+  button:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #ff7fa8;
+  }
+
+  .result {
+    margin-top: 24px;
+    padding: 22px;
+    border-radius: 24px;
+    background: #fff4f8;
+    border: 2px dashed #ffc3dc;
+    display: none;
+  }
+  .result.show { display: block; animation: pop 0.35s ease; }
+  @keyframes pop {
+    0% { opacity: 0; transform: scale(0.85) translateY(8px); }
+    60% { opacity: 1; transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
+  .result .tags { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .result .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ff6f9c;
+    background: #ffe3ee;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+  .result .tag.theme { color: #2ba884; background: #e0f8ee; }
+  .result .tag.month { color: #7d6cff; background: #ece8ff; }
+  .result .name {
+    font-size: 27px;
+    font-weight: 800;
+    color: #4a3a45;
+    margin-bottom: 8px;
+  }
+  .result .desc {
+    font-size: 14px;
+    color: #8a7a85;
+    line-height: 1.6;
+  }
+  .result .note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #e2a13a;
+    font-weight: 700;
+  }
+
+  .stats {
+    margin-top: 22px;
+    padding: 16px;
+    border-radius: 20px;
+    background: #f3f0ff;
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+  }
+  .stats .stat b {
+    display: block;
+    font-size: 18px;
+    color: #7d6cff;
+  }
+  .stats .stat span {
+    font-size: 11px;
+    color: #9a8fcf;
+  }
+  .count {
+    font-size: 11px;
+    color: #b7a8c2;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="emoji-title">🐣🗺️🐰</div>
+    <h1>랜덤 국내 여행지 뽑기</h1>
+    <p class="sub">전국 방방곡곡 여행지 중에서 오늘의 목적지를 콕! 골라줄게요</p>
+
+    <div class="selects">
+      <select id="region">
+        <option value="all">🌏 전체 지역</option>
+        <option value="서울">서울</option>
+        <option value="인천">인천</option>
+        <option value="경기">경기도</option>
+        <option value="강원">강원특별자치도</option>
+        <option value="충북">충청북도</option>
+        <option value="충남">충청남도</option>
+        <option value="대전">대전</option>
+        <option value="세종">세종</option>
+        <option value="전북">전북특별자치도</option>
+        <option value="전남">전라남도</option>
+        <option value="광주">광주</option>
+        <option value="경북">경상북도</option>
+        <option value="경남">경상남도</option>
+        <option value="대구">대구</option>
+        <option value="울산">울산</option>
+        <option value="부산">부산</option>
+        <option value="제주">제주특별자치도</option>
+      </select>
+
+      <select id="theme">
+        <option value="all">✨ 전체 테마</option>
+        <option value="바다">🌊 바다 / 해변</option>
+        <option value="산">⛰️ 산 / 자연</option>
+        <option value="도시">🏙️ 도시</option>
+        <option value="섬">🏝️ 섬</option>
+        <option value="힐링">♨️ 힐링 / 온천</option>
+        <option value="역사">🏯 역사 / 전통</option>
+        <option value="미식">🍜 미식 / 맛집</option>
+        <option value="축제">🎉 축제 / 이벤트</option>
+        <option value="액티비티">🚵 액티비티 / 체험</option>
+        <option value="카페">☕ 카페 / 감성</option>
+      </select>
+
+      <select id="month">
+        <option value="all">📅 전체 시기</option>
+        <option value="1">1월 ❄️</option>
+        <option value="2">2월 ❄️</option>
+        <option value="3">3월 🌸</option>
+        <option value="4">4월 🌸</option>
+        <option value="5">5월 🌿</option>
+        <option value="6">6월 🌿</option>
+        <option value="7">7월 ☀️</option>
+        <option value="8">8월 ☀️</option>
+        <option value="9">9월 🍁</option>
+        <option value="10">10월 🍁</option>
+        <option value="11">11월 🍂</option>
+        <option value="12">12월 ⛄</option>
+      </select>
+    </div>
+
+    <button onclick="pickDestination()">🎲 여행지 뽑기</button>
+
+    <div class="result" id="result">
+      <div class="tags">
+        <span class="tag" id="region-tag"></span>
+        <span class="tag theme" id="theme-tags"></span>
+        <span class="tag month" id="month-tags"></span>
+      </div>
+      <div class="name" id="name"></div>
+      <div class="desc" id="desc"></div>
+      <div class="note" id="note"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>17</b><span>광역자치단체</span></div>
+      <div class="stat"><b>85</b><span>전국 시 전체</span></div>
+      <div class="stat"><b>75</b><span>도 산하 자치시</span></div>
+    </div>
+
+    <div class="count" id="count"></div>
+  </div>
+
+<script>
+// themes: 바다, 산, 도시, 섬, 힐링, 역사, 미식, 축제, 액티비티, 카페
+// months: 추천 방문 시기(1~12월), 여러 달 해당 가능
+const destinations = [
+  { name: "서울", region: "서울", themes: ["도시","카페","미식"], months: [4,5,9,10], desc: "경복궁, 북촌한옥마을부터 한강, 성수동까지 전통과 트렌드가 공존하는 수도." },
+  { name: "인천 차이나타운", region: "인천", themes: ["도시","미식"], months: [3,4,5,9,10,11], desc: "짜장면의 발상지이자 이국적인 거리 풍경이 매력적인 개항의 도시." },
+  { name: "강화도", region: "인천", themes: ["섬","역사"], months: [4,5,9,10], desc: "고인돌 유적과 마니산, 갯벌 낙조로 유명한 역사와 자연의 섬." },
+  { name: "수원", region: "경기", themes: ["역사","도시"], months: [4,5,9,10], desc: "유네스코 세계유산 수원화성과 행궁동 거리가 있는 역사 도시." },
+  { name: "가평", region: "경기", themes: ["힐링","액티비티"], months: [4,5,10,11,1,12], desc: "남이섬, 아침고요수목원 등 서울 근교 힐링 여행의 대표지." },
+  { name: "파주", region: "경기", themes: ["힐링","카페"], months: [4,5,9,10], desc: "임진각과 헤이리예술마을, 프로방스마을이 있는 문화 여행지." },
+  { name: "포천", region: "경기", themes: ["산","액티비티"], months: [7,8,10], desc: "산정호수와 한탄강 협곡으로 유명한 자연 명소." },
+  { name: "강릉", region: "강원", themes: ["바다","카페"], months: [6,7,8,9], desc: "경포대, 안목해변 커피거리로 유명한 동해안 대표 여행지." },
+  { name: "속초", region: "강원", themes: ["바다","산"], months: [7,8,1,2], desc: "설악산과 동해 바다를 동시에 즐길 수 있는 강원도 대표 관광지." },
+  { name: "춘천", region: "강원", themes: ["힐링","미식"], months: [9,10,1,2], desc: "닭갈비와 소양강, 남이섬 인근으로 유명한 감성 도시." },
+  { name: "정선", region: "강원", themes: ["산","액티비티"], months: [9,10,11], desc: "화암동굴과 레일바이크로 유명한 강원도 산간 여행지." },
+  { name: "평창", region: "강원", themes: ["산","액티비티"], months: [6,7,8,1,2], desc: "대관령 양떼목장과 오대산으로 유명한 고원 여행지." },
+  { name: "양양", region: "강원", themes: ["바다","액티비티"], months: [6,7,8], desc: "서핑의 성지로 떠오른 젊고 트렌디한 해변 마을." },
+  { name: "홍천", region: "강원", themes: ["산","힐링"], months: [10,11], desc: "은행나무숲과 계곡으로 유명한 자연 속 힐링 여행지." },
+  { name: "설악산", region: "강원", themes: ["산","액티비티"], months: [9,10,11], desc: "가을 단풍과 울산바위로 유명한 강원도의 명산." },
+  { name: "제천", region: "충북", themes: ["힐링","산"], months: [4,5,9,10], desc: "청풍호와 의림지 등 잔잔한 호수 풍경이 아름다운 힐링 스팟." },
+  { name: "청주", region: "충북", themes: ["도시","역사"], months: [4,5,9,10], desc: "직지의 고장이자 상당산성으로 유명한 충북 대표 도시." },
+  { name: "단양", region: "충북", themes: ["산","액티비티"], months: [7,8,9,10], desc: "단양팔경과 고수동굴 등 절경으로 유명한 자연 명소." },
+  { name: "태안", region: "충남", themes: ["바다","축제"], months: [4,5,7,8], desc: "꽃지해수욕장과 튤립축제로 유명한 서해안 대표 해변." },
+  { name: "부여", region: "충남", themes: ["역사"], months: [4,5,9,10], desc: "백제의 고도로 낙화암과 부소산성 등 역사 유적이 가득한 곳." },
+  { name: "공주", region: "충남", themes: ["역사"], months: [4,5,9,10], desc: "공산성과 무령왕릉으로 유명한 백제 문화유산의 중심지." },
+  { name: "온양온천", region: "충남", themes: ["힐링"], months: [12,1,2], desc: "아산의 대표 온천 지역으로 휴식 여행에 제격." },
+  { name: "대전", region: "대전", themes: ["도시","미식"], months: [4,5,9,10], desc: "대청호와 성심당으로 유명한 과학과 미식의 도시." },
+  { name: "세종", region: "세종", themes: ["도시","힐링"], months: [4,5,9,10], desc: "금강변 산책로와 국립세종수목원이 있는 신도시." },
+  { name: "전주", region: "전북", themes: ["역사","미식"], months: [4,9,10,11], desc: "한옥마을과 전주비빔밥 등 전통과 미식을 동시에 즐길 수 있는 도시." },
+  { name: "군산", region: "전북", themes: ["도시","역사"], months: [4,5,9,10], desc: "일제강점기 근대건축물이 남아있는 레트로 감성 도시." },
+  { name: "부안", region: "전북", themes: ["바다","산"], months: [7,8,9,10], desc: "채석강과 격포해변으로 유명한 서해안 절경 여행지." },
+  { name: "여수", region: "전남", themes: ["바다","축제"], months: [3,6,7,8], desc: "여수밤바다로 유명하며 해상 케이블카와 오동도가 매력적인 항구도시." },
+  { name: "담양", region: "전남", themes: ["산","카페"], months: [5,6,7,10,11], desc: "죽녹원 대나무숲과 메타세쿼이아길로 유명한 자연 힐링 명소." },
+  { name: "보성", region: "전남", themes: ["산","카페"], months: [4,5,9,10], desc: "초록빛 녹차밭 풍경이 인상적인 전남의 대표 자연 여행지." },
+  { name: "순천", region: "전남", themes: ["산","힐링"], months: [4,5,10,11], desc: "순천만 습지와 국가정원으로 유명한 생태 여행지." },
+  { name: "완도", region: "전남", themes: ["섬","미식"], months: [7,8], desc: "청정 다도해와 전복 등 신선한 해산물이 유명한 남해의 섬." },
+  { name: "목포", region: "전남", themes: ["도시","역사"], months: [4,5,9,10], desc: "목포 근대역사문화거리와 유달산 노을이 아름다운 항구도시." },
+  { name: "광주", region: "광주", themes: ["도시","역사"], months: [4,5,9,10], desc: "국립아시아문화전당과 양림동 역사문화마을이 있는 예술의 도시." },
+  { name: "경주", region: "경북", themes: ["역사"], months: [4,9,10], desc: "불국사, 첨성대, 대릉원 등 신라 천년의 역사를 간직한 도시." },
+  { name: "안동", region: "경북", themes: ["역사","미식"], months: [4,5,9,10], desc: "하회마을과 안동찜닭으로 유명한 전통이 살아있는 도시." },
+  { name: "포항", region: "경북", themes: ["바다","미식"], months: [1,7,8,12], desc: "호미곶 해맞이 광장과 죽도시장으로 유명한 동해안 도시." },
+  { name: "울릉도", region: "경북", themes: ["섬","액티비티"], months: [6,7,8], desc: "독도와 가까운 신비로운 섬, 성인봉 트레킹과 청정 자연이 매력." },
+  { name: "통영", region: "경남", themes: ["바다","미식"], months: [4,5,9,10], desc: "동양의 나폴리라 불리는 한려수도의 아름다운 항구도시." },
+  { name: "거제도", region: "경남", themes: ["섬","바다"], months: [3,4,7,8], desc: "외도 보타니아, 바람의 언덕 등 아름다운 해안 절경을 자랑하는 섬." },
+  { name: "남해", region: "경남", themes: ["섬","힐링"], months: [3,4,9,10], desc: "독일마을과 다랭이마을 등 이국적이고 목가적인 풍경의 섬." },
+  { name: "진주", region: "경남", themes: ["역사","축제"], months: [10], desc: "진주성과 남강유등축제로 유명한 역사와 문화의 도시." },
+  { name: "지리산", region: "경남", themes: ["산","액티비티"], months: [4,5,10,11], desc: "웅장한 능선과 둘레길로 유명한 국립공원, 등산객들의 성지." },
+  { name: "대구", region: "대구", themes: ["도시","미식"], months: [4,5,9,10], desc: "김광석다시그리기길과 근대골목으로 유명한 근대문화 도시." },
+  { name: "울산", region: "울산", themes: ["도시","바다"], months: [7,8,10], desc: "대왕암공원과 태화강 국가정원으로 유명한 산업과 자연이 공존하는 도시." },
+  { name: "부산 기장", region: "부산", themes: ["바다","카페"], months: [3,4,9,10], desc: "죽성드림성당과 해동용궁사 등 이국적 해안 명소가 모여있는 곳." },
+  { name: "부산", region: "부산", themes: ["도시","바다","미식"], months: [4,7,8,9], desc: "해운대와 광안리 해변, 감천문화마을, 자갈치시장까지 볼거리와 먹거리가 풍부한 대표 항구도시." },
+  { name: "제주도", region: "제주", themes: ["섬","산","힐링"], months: [3,4,7,8,12,1], desc: "한라산, 성산일출봉, 협재해변 등 사계절 매력이 다른 대한민국 최고의 휴양 섬." },
+  { name: "서귀포", region: "제주", themes: ["섬","액티비티"], months: [4,5,9,10,11,12], desc: "천지연폭포와 올레길로 유명한 제주 남부의 대표 관광지." }
+];
+
+const regionNames = {
+  all: "전체 지역", 서울: "서울", 인천: "인천", 경기: "경기도", 강원: "강원특별자치도",
+  충북: "충청북도", 충남: "충청남도", 대전: "대전", 세종: "세종",
+  전북: "전북특별자치도", 전남: "전라남도", 광주: "광주", 경북: "경상북도",
+  경남: "경상남도", 대구: "대구", 울산: "울산", 부산: "부산", 제주: "제주특별자치도"
+};
+
+document.getElementById('count').textContent = `🐾 등록된 여행지 총 ${destinations.length}곳 (전국 17개 시·도 · 월별 추천 반영)`;
+
+// 오늘 날짜 기준으로 이번 달을 기본 선택
+const monthSelect = document.getElementById('month');
+const today = new Date();
+monthSelect.value = String(today.getMonth() + 1);
+
+function buildPool(constraints) {
+  return destinations.filter(d => {
+    if (constraints.region && d.region !== constraints.region) return false;
+    if (constraints.theme && !d.themes.includes(constraints.theme)) return false;
+    if (constraints.month && !d.months.includes(constraints.month)) return false;
+    return true;
+  });
+}
+
+function pickDestination() {
+  const regionVal = document.getElementById('region').value;
+  const themeVal = document.getElementById('theme').value;
+  const monthVal = document.getElementById('month').value;
+
+  const region = regionVal !== 'all' ? regionVal : null;
+  const theme = themeVal !== 'all' ? themeVal : null;
+  const month = monthVal !== 'all' ? parseInt(monthVal, 10) : null;
+
+  // 조건을 점점 완화하며 첫 번째로 결과가 있는 조합을 사용
+  const attempts = [
+    { c: { region, theme, month }, note: '' },
+    { c: { region, theme }, note: '🙈 이 시기엔 없어서 지역+테마로 다시 뽑았어요!' },
+    { c: { region, month }, note: '🙈 그 테마는 없어서 지역+시기 기준으로 뽑았어요!' },
+    { c: { theme, month }, note: '🙈 그 지역엔 없어서 테마+시기 기준으로 뽑았어요!' },
+    { c: { region }, note: '🙈 조건에 맞는 곳이 없어서 지역만 기준으로 뽑았어요!' },
+    { c: { theme }, note: '🙈 조건에 맞는 곳이 없어서 테마만 기준으로 뽑았어요!' },
+    { c: { month }, note: '🙈 조건에 맞는 곳이 없어서 이 시기 기준으로만 뽑았어요!' },
+    { c: {}, note: '🙈 조건에 맞는 곳이 없어서 전국에서 랜덤으로 뽑았어요!' }
+  ];
+
+  let pool = [];
+  let note = '';
+  for (const attempt of attempts) {
+    pool = buildPool(attempt.c);
+    if (pool.length > 0) { note = attempt.note; break; }
+  }
+
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  const monthNames = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+
+  document.getElementById('region-tag').textContent = '📍 ' + (regionNames[pick.region] || pick.region);
+  document.getElementById('theme-tags').textContent = pick.themes.join(' · ');
+  document.getElementById('month-tags').textContent = '📅 추천 시기: ' + pick.months.map(m => monthNames[m-1]).join(', ');
+  document.getElementById('name').textContent = '🎈 ' + pick.name;
+  document.getElementById('desc').textContent = pick.desc;
+  document.getElementById('note').textContent = note;
+  document.getElementById('result').classList.add('show');
+}
+</script>
+</body>
+</html>
