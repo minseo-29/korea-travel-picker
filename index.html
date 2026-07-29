@@ -115,10 +115,16 @@
   }
   .result-head { display:flex; justify-content:center; align-items:center; gap:10px; }
   .fav-star {
-    border:none; background:transparent; font-size:22px; cursor:pointer; line-height:1;
-    filter: grayscale(1) opacity(0.5);
+    border:none; background:transparent; font-size:24px; cursor:pointer; line-height:1;
+    color: #d9cdd4;
+    transition: transform 0.15s ease, color 0.15s ease;
   }
-  .fav-star.active { filter:none; }
+  .fav-star:hover { color: #f0c14b; }
+  .fav-star.active {
+    color: #ffb300;
+    transform: scale(1.2);
+    text-shadow: 0 0 6px rgba(255, 179, 0, 0.4);
+  }
 
   .tags { margin: 10px 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
   .tag {
@@ -145,6 +151,9 @@
     color: #8a7a85;
     line-height: 1.6;
     margin-bottom: 14px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    white-space: normal;
   }
   .note {
     margin-top: 10px;
@@ -170,7 +179,10 @@
   .section-label {
     font-size: 12px; font-weight: 800; color: #4a3a45; margin: 16px 0 6px; text-align: left;
   }
-  .hint { font-size: 10.5px; color: #b7a8c2; margin-top: 4px; }
+  .hint {
+    font-size: 10.5px; color: #b7a8c2; margin-top: 4px;
+    word-break: keep-all; overflow-wrap: break-word; white-space: normal;
+  }
 
   .stats {
     margin-top: 20px;
@@ -267,7 +279,7 @@
     <div class="result" id="result">
       <div class="result-head">
         <div class="name" id="name"></div>
-        <button class="fav-star" id="favStar" onclick="toggleFavorite()">★</button>
+        <button class="fav-star" id="favStar" onclick="toggleFavorite()">☆</button>
       </div>
       <div class="tags">
         <span class="tag" id="region-tag"></span>
@@ -526,7 +538,10 @@ function toggleFavorite() {
 function updateFavStar() {
   const favs = getFavorites();
   const star = document.getElementById('favStar');
-  if (currentPick && favs.includes(currentPick.name)) star.classList.add('active');
+  const isFav = !!(currentPick && favs.includes(currentPick.name));
+  star.textContent = isFav ? '★' : '☆';
+  star.title = isFav ? '즐겨찾기 해제' : '즐겨찾기에 추가';
+  if (isFav) star.classList.add('active');
   else star.classList.remove('active');
 }
 function toggleFavPanel() {
