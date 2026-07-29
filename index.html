@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>랜덤 국내 여행지 추천 🐣</title>
+<script defer src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=vpp7dnsr5w&submodules=geocoder"></script>
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -154,8 +155,8 @@
   }
 
   .map-wrap { margin-top: 14px; }
-  .map-wrap iframe {
-    width: 100%; height: 170px; border: 0; border-radius: 16px;
+  .map-wrap #naverMap {
+    width: 100%; height: 180px; border-radius: 16px; background: #eef2f7;
   }
   .map-links, .nearby-links, .share-links {
     display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px;
@@ -278,9 +279,9 @@
       <div class="desc" id="desc"></div>
       <div class="note" id="note"></div>
 
-      <div class="section-label">🗺️ 지도로 보기</div>
+      <div class="section-label">🗺️ 지도로 보기 (네이버지도)</div>
       <div class="map-wrap">
-        <iframe id="mapFrame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div id="naverMap"></div>
       </div>
       <div class="map-links" id="mapLinks"></div>
 
@@ -470,6 +471,38 @@ function pickDestination() {
   renderResult(pick, note, effectiveMonth);
 }
 
+// ---------- 네이버 지도 ----------
+let naverMapInstance = null;
+let naverMarker = null;
+function ensureNaverMap() {
+  if (!naverMapInstance && window.naver && naver.maps) {
+    naverMapInstance = new naver.maps.Map('naverMap', {
+      center: new naver.maps.LatLng(36.5, 127.8),
+      zoom: 7
+    });
+  }
+  return naverMapInstance;
+}
+function updateNaverMap(query) {
+  if (!window.naver || !naver.maps || !naver.maps.Service) {
+    // 스크립트가 아직 로드 전이면 잠시 후 재시도
+    setTimeout(() => updateNaverMap(query), 300);
+    return;
+  }
+  const map = ensureNaverMap();
+  naver.maps.Service.geocode({ query }, function (status, response) {
+    if (status !== naver.maps.Service.Status.OK) return;
+    const addresses = response.v2.addresses;
+    if (!addresses || addresses.length === 0) return;
+    const item = addresses[0];
+    const point = new naver.maps.LatLng(item.y, item.x);
+    map.setCenter(point);
+    map.setZoom(12);
+    if (naverMarker) naverMarker.setMap(null);
+    naverMarker = new naver.maps.Marker({ position: point, map });
+  });
+}
+
 function renderResult(pick, note, effectiveMonth) {
   currentPick = pick;
   const season = getSeason(effectiveMonth || pick.months[0]);
@@ -483,12 +516,13 @@ function renderResult(pick, note, effectiveMonth) {
   document.getElementById('desc').textContent = pick.desc;
   document.getElementById('note').textContent = note || '';
 
-  const mapQuery = encodeURIComponent(pick.name + ' ' + (regionNames[pick.region] || ''));
-  document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+  const mapQuery = pick.name + ' ' + (regionNames[pick.region] || '');
+  const mapQueryEnc = encodeURIComponent(mapQuery);
+  updateNaverMap(mapQuery);
   document.getElementById('mapLinks').innerHTML = `
-    <a class="pill-link" target="_blank" rel="noopener" href="https://map.kakao.com/?q=${mapQuery}">카카오맵</a>
-    <a class="pill-link" target="_blank" rel="noopener" href="https://map.naver.com/v5/search/${mapQuery}">네이버지도</a>
-    <a class="pill-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}">구글지도</a>
+    <a class="pill-link" target="_blank" rel="noopener" href="https://map.kakao.com/?q=${mapQueryEnc}">카카오맵</a>
+    <a class="pill-link" target="_blank" rel="noopener" href="https://map.naver.com/v5/search/${mapQueryEnc}">네이버지도(새 탭)</a>
+    <a class="pill-link" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${mapQueryEnc}">구글지도</a>
   `;
 
   document.getElementById('nearbyLinks').innerHTML = `
