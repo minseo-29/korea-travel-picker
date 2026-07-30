@@ -366,6 +366,28 @@
   .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 13px; color: var(--text); }
   .fav-item button { border: none; background: none; cursor: pointer; font-size: 12px; color: var(--accent-dark); font-weight: 700; }
   .fav-empty { font-size: 12px; color: var(--muted); }
+
+  .manual-share-box {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10000;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.12);
+    animation: fadeIn 0.2s ease;
+  }
+  .manual-share-inner { max-width: 480px; margin: 0 auto; }
+  .manual-share-label {
+    font-size: 12px; color: var(--muted); margin-bottom: 8px; text-align: center;
+    word-break: keep-all;
+  }
+  .manual-share-box input {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--border); font-size: 13px; margin-bottom: 8px;
+    background: var(--bg); color: var(--text);
+  }
+  .manual-share-box button {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    background: var(--text); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -1073,25 +1095,82 @@ function removeFavorite(name) {
 
 // ---------- 공유하기 ----------
 function buildShareUrl() {
-  if (!currentPick) return location.href;
-  const url = new URL(location.href);
-  url.search = '';
+  if (!currentPick) return location.href.split('?')[0].split('#')[0];
+  const url = new URL(location.href.split('?')[0].split('#')[0]);
   url.searchParams.set('n', currentPick.name);
   return url.toString();
 }
+
+// 클립보드 API가 막혀있는 인앱 브라우저(카카오톡 등)를 위한 구식 복사 방식
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.top = '0';
+  ta.style.left = '0';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+// 복사 API가 모두 막혀있을 때 마지막 수단: 직접 눈으로 보고 복사할 수 있는 링크 박스
+function showManualShareBox(url) {
+  let box = document.getElementById('manualShareBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'manualShareBox';
+    box.className = 'manual-share-box';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `
+    <div class="manual-share-inner">
+      <div class="manual-share-label">복사가 자동으로 안 될 때는, 아래 링크를 길게 눌러 직접 복사해주세요</div>
+      <input type="text" id="manualShareInput" readonly value="${url}">
+      <button type="button" onclick="document.getElementById('manualShareBox').remove()">닫기</button>
+    </div>
+  `;
+  const input = document.getElementById('manualShareInput');
+  input.focus();
+  input.select();
+  try { input.setSelectionRange(0, 99999); } catch (e) {}
+}
+
 function copyShareLink() {
   const url = buildShareUrl();
-  navigator.clipboard.writeText(url).then(() => {
+  if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('링크를 복사했어요. 카카오톡이나 문자에 붙여넣기 해보세요.');
+    }).catch(() => {
+      if (legacyCopy(url)) {
+        alert('링크를 복사했어요. 카카오톡이나 문자에 붙여넣기 해보세요.');
+      } else {
+        showManualShareBox(url);
+      }
+    });
+  } else if (legacyCopy(url)) {
     alert('링크를 복사했어요. 카카오톡이나 문자에 붙여넣기 해보세요.');
-  }).catch(() => {
-    prompt('이 링크를 복사해주세요:', url);
-  });
+  } else {
+    showManualShareBox(url);
+  }
 }
+
 function shareResult() {
   if (!currentPick) return;
   const url = buildShareUrl();
   if (navigator.share) {
-    navigator.share({ title: '오늘의 여행지: ' + currentPick.name, text: currentPick.desc, url }).catch(() => {});
+    navigator.share({ title: '오늘의 여행지: ' + currentPick.name, text: currentPick.desc, url })
+      .catch((err) => {
+        // 사용자가 공유 시트를 취소한 경우엔 아무 것도 하지 않음
+        if (err && err.name === 'AbortError') return;
+        copyShareLink();
+      });
   } else {
     copyShareLink();
   }
