@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MAP PICK</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -18,11 +19,39 @@
   }
   body {
     margin: 0;
-    font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     background: var(--bg);
     color: var(--text);
   }
   a { color: inherit; }
+
+  /* ---------- 커스텀 커서 ---------- */
+  @media (hover: hover) and (pointer: fine) {
+    body.custom-cursor, body.custom-cursor * { cursor: none !important; }
+    .cursor-dot, .cursor-ring {
+      position: fixed; top: 0; left: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+    .cursor-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+    }
+    .cursor-ring {
+      width: 32px; height: 32px;
+      border: 1.5px solid var(--accent);
+      background: rgba(201, 83, 47, 0);
+      transition: width 0.2s ease, height 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+    .cursor-ring.hover {
+      width: 38px; height: 38px;
+      background: rgba(201, 83, 47, 0.12);
+    }
+    .cursor-ring.press { width: 26px; height: 26px; }
+    .cursor-dot.hidden, .cursor-ring.hidden { opacity: 0; }
+  }
 
   /* ---------- Header ---------- */
   .site-header {
@@ -100,6 +129,32 @@
   }
   .hero-sub {
     font-size: 13.5px; color: rgba(255,255,255,0.6); margin-bottom: 32px;
+  }
+  .scroll-cue {
+    margin-top: 34px;
+    display: inline-flex; flex-direction: column; align-items: center; gap: 9px;
+    font-size: 10px; letter-spacing: 3px; font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer; background: none; border: none;
+  }
+  .scroll-cue .scroll-icon {
+    width: 18px; height: 30px;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 12px;
+    position: relative;
+  }
+  .scroll-cue .scroll-icon::before {
+    content: "";
+    position: absolute; top: 5px; left: 50%;
+    width: 3px; height: 6px; border-radius: 2px;
+    background: rgba(255,255,255,0.7);
+    transform: translateX(-50%);
+    animation: scrollDot 1.6s ease-in-out infinite;
+  }
+  @keyframes scrollDot {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    70% { opacity: 0; transform: translate(-50%, 9px); }
+    100% { opacity: 0; transform: translate(-50%, 9px); }
   }
   .phone-mock-stage { perspective: 1200px; }
   .phone-mock {
@@ -332,9 +387,13 @@
         <div class="chat-window" id="chatWindow"></div>
       </div>
     </div>
+    <button class="scroll-cue" onclick="scrollToThemes()" aria-label="아래로 스크롤">
+      <span class="scroll-icon"></span>
+      SCROLL
+    </button>
   </section>
 
-  <section class="theme-strip">
+  <section class="theme-strip" id="themeStripSection">
     <div class="theme-strip-title">테마로 빠르게 골라보기</div>
     <div class="theme-strip-inner" id="themeStrip"></div>
   </section>
@@ -830,6 +889,9 @@ Object.keys(themeIcons).forEach(key => {
 function scrollToCard() {
   document.getElementById('pickerCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+function scrollToThemes() {
+  document.getElementById('themeStripSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function buildPool(c) {
   return destinations.filter(d => {
@@ -1069,6 +1131,56 @@ async function playChat() {
   }
 }
 playChat();
+
+// ---------- 커스텀 마우스 커서 ----------
+(function initCustomCursor() {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+  document.body.classList.add('custom-cursor');
+  const dot = document.createElement('div');
+  dot.className = 'cursor-dot hidden';
+  const ring = document.createElement('div');
+  ring.className = 'cursor-ring hidden';
+  document.body.appendChild(dot);
+  document.body.appendChild(ring);
+
+  let mouseX = window.innerWidth / 2;
+  let mouseY = window.innerHeight / 2;
+  let ringX = mouseX;
+  let ringY = mouseY;
+
+  window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    dot.style.left = mouseX + 'px';
+    dot.style.top = mouseY + 'px';
+    dot.classList.remove('hidden');
+    ring.classList.remove('hidden');
+  });
+  window.addEventListener('mouseleave', () => {
+    dot.classList.add('hidden');
+    ring.classList.add('hidden');
+  });
+
+  function raf() {
+    ringX += (mouseX - ringX) * 0.16;
+    ringY += (mouseY - ringY) * 0.16;
+    ring.style.left = ringX + 'px';
+    ring.style.top = ringY + 'px';
+    requestAnimationFrame(raf);
+  }
+  raf();
+
+  const hoverSelector = 'a, button, select, .theme-box, .dur-btn, .pill-link, .fav-icon-btn, .fav-star, .fav-item button';
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.closest(hoverSelector)) ring.classList.add('hover');
+  });
+  document.addEventListener('mouseout', (e) => {
+    if (e.target.closest(hoverSelector)) ring.classList.remove('hover');
+  });
+  document.addEventListener('mousedown', () => ring.classList.add('press'));
+  document.addEventListener('mouseup', () => ring.classList.remove('press'));
+})();
 
 // 공유 링크로 들어왔으면 자동으로 결과 보여주기
 window.addEventListener('DOMContentLoaded', () => {
