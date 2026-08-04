@@ -3,7 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MAP PICK</title>
+<title>MAP PICK | 복잡한 계획 없이, 가볍게 떠나는 여행</title>
+<meta name="description" content="테마, 계절, 동행에 맞춰 국내 여행지를 랜덤으로 추천하고 1박2일부터 3박4일까지 동선 코스까지 짜주는 여행지 추천 서비스, MAP PICK.">
+<meta name="keywords" content="여행지 추천, 국내여행, 여행 코스, 랜덤 여행지, 당일치기, 1박2일, 주말여행">
+<link rel="canonical" href="https://mappick.kro.kr/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mappick.kro.kr/">
+<meta property="og:title" content="MAP PICK | 복잡한 계획 없이, 가볍게 떠나는 여행">
+<meta property="og:description" content="테마, 계절, 동행에 맞춰 국내 여행지를 랜덤으로 뽑고 동선 코스까지 짜주는 여행지 추천 서비스">
+<meta property="og:image" content="https://mappick.kro.kr/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MAP PICK | 복잡한 계획 없이, 가볍게 떠나는 여행">
+<meta name="twitter:description" content="테마, 계절, 동행에 맞춰 국내 여행지를 랜덤으로 뽑고 동선 코스까지 짜주는 여행지 추천 서비스">
+<meta name="twitter:image" content="https://mappick.kro.kr/og-image.jpg">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c9532f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MAP PICK">
+
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 <style>
   * { box-sizing: border-box; }
@@ -17,6 +47,24 @@
     --accent-dark: #a5411f;
     --season-color: #c9532f;
   }
+  body.dark {
+    --bg: #15161a;
+    --surface: #202126;
+    --text: #f0efec;
+    --muted: #9c9b98;
+    --border: #34353b;
+    --accent: #e2825a;
+    --accent-dark: #f0a17e;
+  }
+  body { transition: background 0.25s ease, color 0.25s ease; }
+  body.dark .theme-box.active { background: #2c2419; }
+  body.dark .map-wrap iframe { background: #2a2a2e; }
+  body.dark .site-header { box-shadow: none; }
+  .theme-toggle-btn {
+    border: none; background: none; cursor: pointer;
+    font-size: 18px; color: var(--text); line-height: 1;
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; justify-self: end; }
   body {
     margin: 0;
     font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -58,7 +106,7 @@
   }
   .header-inner {
     max-width: 1100px; margin: 0 auto;
-    display: grid; grid-template-columns: 40px 1fr 40px;
+    display: grid; grid-template-columns: 40px 1fr 88px;
     align-items: center; padding: 16px 20px;
   }
   .logo {
@@ -443,7 +491,10 @@
     <div class="header-inner">
       <div></div>
       <div class="logo">MAP PICK</div>
-      <button class="fav-icon-btn" onclick="toggleFavPanel(); scrollToCard();" title="즐겨찾기">★</button>
+      <div class="header-right">
+        <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="다크모드 전환">🌙</button>
+        <button class="fav-icon-btn" onclick="toggleFavPanel(); scrollToCard();" title="즐겨찾기">★</button>
+      </div>
     </div>
   </header>
 
@@ -577,6 +628,8 @@
       <div class="fav-panel" id="favPanel">
         <h3>내 즐겨찾기</h3>
         <div id="favList"></div>
+        <h3 style="margin-top:14px;">최근 본 곳</h3>
+        <div id="historyList"></div>
       </div>
 
       <div class="stats">
@@ -1044,6 +1097,7 @@ function renderResult(pick, note, effectiveMonth) {
 
   updateFavStar();
   renderItinerary(2);
+  addToHistory(pick);
   document.getElementById('result').classList.add('show');
   document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -1163,6 +1217,61 @@ function removeFavorite(name) {
   saveFavorites(getFavorites().filter(n => n !== name));
   renderFavList();
   updateFavStar();
+}
+
+// ---------- 최근 본 곳 ----------
+const HISTORY_KEY = 'kr_travel_history';
+const HISTORY_MAX = 8;
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function addToHistory(pick) {
+  let list = getHistory().filter(name => name !== pick.name);
+  list.unshift(pick.name);
+  if (list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  renderHistory();
+}
+function renderHistory() {
+  const box = document.getElementById('historyList');
+  if (!box) return;
+  const list = getHistory();
+  if (list.length === 0) {
+    box.innerHTML = '<div class="fav-empty">아직 뽑아본 여행지가 없어요.</div>';
+    return;
+  }
+  box.innerHTML = list.map(name => `
+    <div class="fav-item">
+      <span>${name}</span>
+      <span>
+        <button onclick="showFavorite('${name}')">다시 보기</button>
+      </span>
+    </div>
+  `).join('');
+}
+function clearHistory() {
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+}
+
+// ---------- 다크모드 ----------
+const THEME_KEY = 'kr_travel_theme';
+function applyTheme(mode) {
+  document.body.classList.toggle('dark', mode === 'dark');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = mode === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const isDark = document.body.classList.contains('dark');
+  const next = isDark ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+}
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (prefersDark ? 'dark' : 'light'));
 }
 
 // ---------- 공유하기 ----------
@@ -1315,7 +1424,7 @@ playChat();
   }
   raf();
 
-  const hoverSelector = 'a, button, select, .theme-box, .dur-btn, .pill-link, .fav-icon-btn, .fav-star, .fav-item button';
+  const hoverSelector = 'a, button, select, .theme-box, .dur-btn, .pill-link, .fav-icon-btn, .fav-star, .fav-item button, .theme-toggle-btn';
   document.addEventListener('mouseover', (e) => {
     if (e.target.closest(hoverSelector)) cursor.classList.add('hover');
   });
@@ -1334,7 +1443,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const found = destinations.find(d => d.name === sharedName);
     if (found) renderResult(found, '공유받은 여행지예요.', found.months[0]);
   }
+  initTheme();
   renderFavList();
+  renderHistory();
 });
 </script>
 </body>
