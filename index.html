@@ -380,18 +380,21 @@
   .itinerary-spot-links a { font-size: 10.5px; font-weight: 700; text-decoration: none; color: var(--accent-dark); }
   .itinerary-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 10px; }
 
-  .itinerary-travel {
-    margin-top: 10px; padding-top: 10px;
-    border-top: 1px dashed var(--border);
+  .itinerary-leg {
+    margin: 8px 0 12px; padding: 8px 10px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
   }
-  .itinerary-travel-label {
-    font-size: 10.5px; font-weight: 800; color: var(--text);
-    letter-spacing: 0.3px; margin-bottom: 4px;
+  .itinerary-leg-route {
+    font-size: 10.5px; font-weight: 800; color: var(--accent-dark);
+    margin-bottom: 3px; word-break: keep-all; overflow-wrap: break-word;
   }
-  .itinerary-travel-text {
+  .itinerary-leg-text {
     font-size: 10.5px; color: var(--muted); line-height: 1.6;
     word-break: keep-all; overflow-wrap: break-word;
   }
+  .itinerary-leg-solo { margin-top: 10px; font-size: 10.5px; color: var(--muted); }
 
   .stats {
     margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
@@ -1062,10 +1065,10 @@ function renderItinerary(dur) {
 
   const dayLabel = { 2: '1박2일', 3: '2박3일', 4: '3박4일' }[dur];
   box.innerHTML = plan.map((day, i) => {
-    const spotsHtml = day.map(spotName => {
+    const spotsHtml = day.map((spotName, si) => {
       const spot = destinations.find(x => x.name === spotName);
       const mapQ = encodeURIComponent(spotName + ' ' + regionLabel);
-      return `
+      const spotBlock = `
         <div class="itinerary-spot">
           <div class="itinerary-spot-name">${spotName}</div>
           <div class="itinerary-spot-desc">${spot ? spot.desc : ''}</div>
@@ -1075,33 +1078,29 @@ function renderItinerary(dur) {
             <a target="_blank" rel="noopener" href="https://map.kakao.com/?q=${encodeURIComponent(spotName + ' 카페')}">☕ 주변카페</a>
           </div>
         </div>`;
+      const legBlock = si < day.length - 1 ? buildLegTravelInfo(spotName, day[si + 1]) : '';
+      return spotBlock + legBlock;
     }).join('');
-    const travelHtml = buildTravelInfo(day.length);
-    return `<div class="itinerary-day"><div class="itinerary-day-head">${i + 1}일차</div>${spotsHtml}${travelHtml}</div>`;
+    const soloNote = day.length === 1
+      ? `<div class="itinerary-leg itinerary-leg-solo">이 날은 한 곳 위주 일정이라 별도의 이동 구간이 거의 없어요.</div>`
+      : '';
+    return `<div class="itinerary-day"><div class="itinerary-day-head">${i + 1}일차</div>${spotsHtml}${soloNote}</div>`;
   }).join('') + `<div class="hint" style="margin-top:2px;">${regionLabel} ${dayLabel} 추천 코스예요. 이동시간은 지역 내 평균치를 바탕으로 한 대략적인 예상치예요.</div>`;
 }
 
-// 하루 일정 안에서 이동하는 횟수(장소 수 - 1)를 기준으로, 교통수단별 대략적인 소요시간을 추정
-function buildTravelInfo(spotCount) {
-  const hops = Math.max(0, spotCount - 1);
-  if (hops === 0) {
-    return `
-      <div class="itinerary-travel">
-        <div class="itinerary-travel-label">이동 안내</div>
-        <div class="itinerary-travel-text">이 날은 한 곳 위주 일정이라 별도의 이동 구간이 거의 없어요.</div>
-      </div>`;
-  }
+// 장소 A → 장소 B로 이동할 때, 교통수단별 대략적인 소요시간을 추정
+function buildLegTravelInfo(fromName, toName) {
   const modes = [
     { label: '🚌 버스', min: 20, max: 35 },
     { label: '🚇 지하철', min: 15, max: 25 },
     { label: '🚕 택시', min: 10, max: 20 },
     { label: '🚗 자차', min: 10, max: 20 }
   ];
-  const lines = modes.map(m => `${m.label} 약 ${m.min * hops}~${m.max * hops}분`).join(' · ');
+  const lines = modes.map(m => `${m.label} 약 ${m.min}~${m.max}분`).join(' · ');
   return `
-    <div class="itinerary-travel">
-      <div class="itinerary-travel-label">이동 안내 (이동 ${hops}회 기준)</div>
-      <div class="itinerary-travel-text">${lines}</div>
+    <div class="itinerary-leg">
+      <div class="itinerary-leg-route">🔀 ${fromName} → ${toName}</div>
+      <div class="itinerary-leg-text">${lines}</div>
     </div>`;
 }
 
@@ -1308,8 +1307,8 @@ playChat();
   });
 
   function raf() {
-    curX += (mouseX - curX) * 0.22;
-    curY += (mouseY - curY) * 0.22;
+    curX += (mouseX - curX) * 0.55;
+    curY += (mouseY - curY) * 0.55;
     cursor.style.left = curX + 'px';
     cursor.style.top = curY + 'px';
     requestAnimationFrame(raf);
